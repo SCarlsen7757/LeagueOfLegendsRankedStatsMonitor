@@ -1,0 +1,42 @@
+services:
+  leagueoflegendsinfluxtelegrafagent:
+    image: ${DOCKER_REGISTRY-}leagueoflegendsinfluxtelegrafagent
+    build:
+      context: LeagueOfLegendsInFluxTelegrafAgent
+      dockerfile: Dockerfile
+    depends_on:
+      - influxdb
+    environment:
+      - InfluxDb__Url=http://influxdb:8086/
+      - InfluxDb__Organization=${INFLUXDB_ORGANIZATION}
+      - InfluxDb__Bucket=${INFLUXDB_BUCKET}
+      - InfluxDb__Token=${INFLUXDB_TOKEN}
+      - RiotGamesApi__Token=${RIOT_API_TOKEN}
+      - RiotGamesAccount__RefreshInterval=${RIOT_ACCOUNT_REFRESH_INTERVAL:-24:00:00}
+      - RiotGamesLeagueEntry__RefreshInterval=${RIOT_LEAGUE_ENTRY_REFRESH_INTERVAL:-00:30:00}
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - '8086:8086'
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=db0
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '8087:3000'
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana-provisioning/:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+
+volumes:
+  influxdb-storage:
+  grafana-storage:
