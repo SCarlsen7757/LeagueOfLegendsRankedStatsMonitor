@@ -1,6 +1,0 @@
-@LeagueOfLegendsInFluxTelegrafAgent_HostAddress = http://localhost:5031
-
-GET {{LeagueOfLegendsInFluxTelegrafAgent_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
