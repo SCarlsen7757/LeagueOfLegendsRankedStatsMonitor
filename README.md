@@ -33,7 +33,7 @@ The application periodically fetches data from the Riot Games API, stores it in 
 
 ```bash
 git clone <repository-url>
-cd LolStatMonitor
+cd LeagueOfLegendsStatMonitor
 ```
 
 ### 2. Configure Environment Variables
@@ -45,7 +45,7 @@ Create or modify the `.env` file in the root directory with your configuration:
 MYSQL_USERNAME=lolstats
 MYSQL_PASSWORD=lolstats123
 MYSQL_ROOT_PASSWORD=rootpassword123
-MYSQL_DATABASE=LolStats
+MYSQL_DATABASE=RiotGames
 
 # InfluxDB Configuration
 INFLUXDB_USERNAME=admin
@@ -124,8 +124,8 @@ Enter the root password (default: `rootpassword123` from `.env`)
 
 ```sql
 CREATE USER 'grafana_user'@'%' IDENTIFIED BY 'grafana_password';
-GRANT SELECT ON LolStats.* TO 'grafana_user'@'%';
-GRANT SELECT ON LolStats.Accounts TO 'grafana_user'@'%';
+GRANT SELECT ON RiotGames.* TO 'grafana_user'@'%';
+GRANT SELECT ON RiotGames.Accounts TO 'grafana_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -149,7 +149,7 @@ EXIT;
 4. Select **MySQL**
 5. Configure with the following settings:
    - **Host**: `mysql:3306`
-   - **Database**: `LolStats`
+   - **Database**: `RiotGames`
    - **User**: `grafana_user`
    - **Password**: `grafana_password`
 6. Click **Save & Test**
@@ -207,7 +207,7 @@ For local development without Docker, configure `LeagueOfLegendsInFluxTelegrafAg
 ```json
 {
   "MySQL": {
-    "ConnectionString": "Server=localhost;Port=3306;Database=LolStats;User=root;Password=yourpassword;"
+    "ConnectionString": "Server=localhost;Port=3306;Database=RiotGames;User=root;Password=yourpassword;"
   },
   "InfluxDb": {
     "Url": "http://localhost:8086/",

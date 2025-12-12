@@ -52,8 +52,8 @@ var accountService = app.Services.GetRequiredService<AccountService>();
 var leagueEntryService = app.Services.GetRequiredService<LeagueEntryService>();
 
 var influxDbConfig = builder.Configuration.GetSection("InfluxDb");
-var bucket = influxDbConfig["Bucket"] ?? "LolStats";
-var organization = influxDbConfig["Organization"] ?? "Lol";
+var bucket = influxDbConfig["Bucket"] ?? "RankedStats";
+var organization = influxDbConfig["Organization"] ?? "LeagueOfLegends";
 
 // Subscribe to league entry data changes and write to InfluxDB
 leagueEntryService.OnNewLeagueEntryData += async (leagueEntries) =>
