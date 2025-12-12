@@ -19,7 +19,7 @@ var connectionString = builder.Configuration.GetSection("MySQL")["ConnectionStri
 
 // Register DbContext as a factory for singleton services
 builder.Services.AddDbContextFactory<AccountDbContext>(options =>
-    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddSingleton<MySQLService>();
 builder.Services.AddSingleton<IAccountStorageService>(sp => sp.GetRequiredService<MySQLService>());
