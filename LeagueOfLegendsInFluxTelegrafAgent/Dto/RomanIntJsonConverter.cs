@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace InfluxDbDataInsert.Dto
+namespace LeagueOfLegendsInFluxTelegrafAgent.Dto
 {
     public class RomanIntJsonConverter : JsonConverter<int>
     {

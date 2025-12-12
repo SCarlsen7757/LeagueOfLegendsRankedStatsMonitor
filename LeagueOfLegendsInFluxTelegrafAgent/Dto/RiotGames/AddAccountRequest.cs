@@ -1,6 +1,7 @@
+using LeagueOfLegendsInFluxTelegrafAgent.Enums.RiotGames;
 using System.ComponentModel.DataAnnotations;
 
-namespace LeagueOfLegendsInFluxTelegrafAgent.Dto
+namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 {
     public record AddAccountRequest
     {
@@ -9,5 +10,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Dto
 
         [Required]
         public required string TagLine { get; init; }
+
+        [Required]
+        public required Platforms Platform { get; init; }
     }
 }

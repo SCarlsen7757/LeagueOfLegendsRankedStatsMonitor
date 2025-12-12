@@ -1,4 +1,4 @@
-namespace InfluxDbDataInsert.Dto
+namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 {
     public enum LeagueTier
     {

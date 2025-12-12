@@ -1,18 +1,17 @@
-﻿namespace InfluxDbDataInsert.Dto
+﻿namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 {
-    using InfluxDB.Client.Core;
     using System.Text.Json.Serialization;
 
-    [Measurement("PlayerStats")]
     public record LeagueEntryDTO
     {
         [JsonPropertyName("leagueId")]
         public required string LeagueId { get; init; }
         [JsonPropertyName("puuid")]
-        [Column("PuuId", IsTag = true)]
         public required string PuuId { get; init; }
+        [JsonPropertyName("queueType")]
+        public required string QueueType { get; init; }
         [JsonPropertyName("tier")]
-        [JsonConverter(typeof(TierRomanJsonConverter))]
+        [JsonConverter(typeof(TierJsonConverter))]
         public required LeagueTier Tier { get; init; }
         [JsonPropertyName("rank")]
         [JsonConverter(typeof(RomanIntJsonConverter))]
@@ -20,16 +19,16 @@
         [JsonPropertyName("leaguePoints")]
         public required int LeaguePoints { get; init; }
         [JsonPropertyName("wins")]
-        [Column("Wins")]
         public required int Wins { get; init; }
         [JsonPropertyName("losses")]
-        [Column("Losses")]
         public required int Losses { get; init; }
+        [JsonIgnore]
+        public int TotalGames => Wins + Losses;
+        [JsonIgnore]
+        public double WinRate => TotalGames == 0 ? 0 : (double)Wins / TotalGames * 100;
         [JsonPropertyName("hotStreak")]
-        [Column("HotStreak")]
         public required bool HotStreak { get; init; }
         [JsonIgnore]
-        [Column("LeaguePoints")]
         public int TotalLeaguePoints => CalculateTotalLeaguePoints();
 
         private int CalculateTotalLeaguePoints()

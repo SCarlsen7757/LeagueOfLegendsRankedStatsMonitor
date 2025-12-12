@@ -1,35 +1,50 @@
-﻿using InfluxDbDataInsert.Dto;
+﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+using LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces;
+using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 
-namespace LeagueOfLegendsInFluxTelegrafAgent.Services
+namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
 {
-    public class RiotGamesAccountServiceOptions
+    public class AccountService : BackgroundService, IAccountService
     {
-        public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromHours(24);
-    }
+        private readonly AccountServiceOptions options;
+        private readonly ILogger<AccountService> logger;
+        private readonly IApiService apiService;
+        private readonly IAccountStorageService storageService;
 
-    public class RiotGamesAccountService : BackgroundService, IRiotGamesAccountService
-    {
-        private readonly RiotGamesAccountServiceOptions options;
-        private readonly ILogger<RiotGamesAccountService> logger;
-        private readonly IRiotGamesApiService apiService;
+        public event Action<IReadOnlyDictionary<string, AccountDto>>? OnNewAccountData;
 
-        public event Action<Dictionary<string, AccountDto>>? OnNewAccountData;
+        private readonly ConcurrentDictionary<string, AccountDto> accounts = new();
 
+        public IReadOnlyDictionary<string, AccountDto> Accounts => accounts;
 
-        public Dictionary<string, AccountDto> Accounts { get; private set; } = [];
-
-        public RiotGamesAccountService(IOptions<RiotGamesAccountServiceOptions> options,
-                              ILogger<RiotGamesAccountService> logger,
-                              IRiotGamesApiService apiService)
+        public AccountService(IOptions<AccountServiceOptions> options,
+                              ILogger<AccountService> logger,
+                              IApiService apiService,
+                              IAccountStorageService storageService)
         {
             this.options = options.Value;
             this.logger = logger;
             this.apiService = apiService;
+            this.storageService = storageService;
+        }
+
+        public async Task InitializeAsync()
+        {
+            foreach (var account in await storageService.GetAllAccountsAsync())
+            {
+                accounts[account.PuuId] = account;
+            }
+
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Loaded {Count} accounts from storage", Accounts.Count);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            await InitializeAsync();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (await FetchAllAccountDataAsync()) OnNewAccountData?.Invoke(Accounts);
@@ -39,8 +54,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
 
         public async Task<AccountDto?> FetchAccountByRiotIdAsync(string gameName, string tagLine)
         {
-            RiotGamesRegions region = apiService.GetRegionsFromTagLine(tagLine);
-            string url = $"{apiService.GetUrl(region)}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
+            string url = $"{apiService.GetUrl(apiService.Region)}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
             return await apiService.GetAsync<AccountDto>(url);
         }
 
@@ -51,10 +65,12 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                 return false;
             }
 
-            Accounts[account.PuuId] = account;
+            accounts[account.PuuId] = account;
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("Added account: {GameName}#{TagLine} (PUUID: {PuuId})",
                     account.GameName, account.TagLine, account.PuuId);
+
+            _ = storageService.UpsertAccountAsync(account);
 
             OnNewAccountData?.Invoke(Accounts);
             return true;
@@ -62,10 +78,14 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
 
         public bool RemoveAccount(string puuId)
         {
-            if (Accounts.Remove(puuId))
+            if (accounts.TryRemove(puuId, out var removed))
             {
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("Removed account with PUUID: {PuuId}", puuId);
+
+                _ = storageService.DeleteAccountAsync(puuId);
+
+                OnNewAccountData?.Invoke(Accounts);
                 return true;
             }
             return false;
@@ -74,39 +94,38 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
         private async Task<bool> FetchAllAccountDataAsync()
         {
             bool newDataFetched = false;
-            foreach (var keyPair in Accounts)
+            foreach (var keyPair in accounts)
             {
                 var accountData = await FetchAccountDataAsync(keyPair.Key, keyPair.Value.TagLine);
                 if (accountData != null)
                 {
                     if (accountData.GameName == keyPair.Value.GameName && accountData.TagLine == keyPair.Value.TagLine) continue;
 
-                    Accounts[keyPair.Key] = new AccountDto
+                    accounts[keyPair.Key] = new AccountDto
                     {
                         PuuId = accountData.PuuId,
                         GameName = accountData.GameName,
                         TagLine = accountData.TagLine,
                     };
 
+                    _ = storageService.UpsertAccountAsync(accounts[keyPair.Key]);
+
                     newDataFetched = true;
                     if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("Updated account data for PUUID: {Puuid}", keyPair);
+                        logger.LogInformation("Updated account data for PUUID: {Puuid}", keyPair.Key);
                 }
             }
 
             if (newDataFetched)
             {
-                OnNewAccountData?.Invoke(Accounts);
-                newDataFetched = false;
+                OnNewAccountData?.Invoke(accounts);
             }
             return newDataFetched;
         }
 
         private async Task<AccountDto?> FetchAccountDataAsync(string puuid, string tagLine)
         {
-            RiotGamesRegions regions = apiService.GetRegionsFromTagLine(tagLine);
-
-            string url = $"{apiService.GetUrl(regions)}/riot/account/v1/accounts/by-puuid/{puuid}";
+            string url = $"{apiService.GetUrl(apiService.Region)}/riot/account/v1/accounts/by-puuid/{puuid}";
             return await apiService.GetAsync<AccountDto>(url);
         }
     }

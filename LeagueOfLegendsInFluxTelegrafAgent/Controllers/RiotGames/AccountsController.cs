@@ -1,34 +1,35 @@
-﻿using InfluxDbDataInsert.Dto;
-using LeagueOfLegendsInFluxTelegrafAgent.Dto;
-using LeagueOfLegendsInFluxTelegrafAgent.Services;
+﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers
+namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RiotAccountsController : ControllerBase
+    public class AccountsController : ControllerBase
     {
-        private readonly RiotGamesAccountService accountService;
-        private readonly ILogger<RiotAccountsController> logger;
+        private readonly ILogger<AccountsController> logger;
+        private readonly IAccountService accountService;
+        private readonly ILeagueEntryService leagueEntryService;
 
-        public RiotAccountsController(
-            RiotGamesAccountService accountService,
-            ILogger<RiotAccountsController> logger)
+        public AccountsController(
+            ILogger<AccountsController> logger,
+            IAccountService accountService,
+            ILeagueEntryService leagueEntryService
+            )
         {
-            this.accountService = accountService;
             this.logger = logger;
+            this.accountService = accountService;
+            this.leagueEntryService = leagueEntryService;
         }
 
-        // GET: api/RiotAccounts
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<AccountDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<AccountDto>> GetAll()
         {
-            return Ok(accountService.Accounts.Values);
+            return Ok(accountService.Accounts.Values.ToList());
         }
 
-        // GET api/RiotAccounts/{puuid}
         [HttpGet("{puuid}")]
         [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -42,7 +43,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers
             return NotFound(new { message = $"Account with PUUID '{puuid}' not found" });
         }
 
-        // POST api/RiotAccounts
         [HttpPost]
         [ProducesResponseType(typeof(AccountDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -57,7 +57,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers
 
             try
             {
-                // Fetch account from Riot API to verify it exists
                 var account = await accountService.FetchAccountByRiotIdAsync(request.GameName, request.TagLine);
 
                 if (account == null)
@@ -68,7 +67,24 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers
                     return NotFound(new { message = $"Riot account '{request.GameName}#{request.TagLine}' not found" });
                 }
 
-                // Add account to the service
+                var leagueEntry = await leagueEntryService.FetchLeagueEntryDataAsync(account.PuuId, request.Platform);
+                if (leagueEntry == null)
+                {
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("No league entry data found for account: {GameName}#{TagLine} (PUUID: {PuuId})",
+                            account.GameName, account.TagLine, account.PuuId);
+                    return NotFound(new { message = $"No league entry data found for account '{request.GameName}#{request.TagLine}'. At platform: {request.Platform}" });
+                }
+
+                account = new AccountDto()
+                {
+                    GameName = account.GameName,
+                    TagLine = account.TagLine,
+                    PuuId = account.PuuId,
+                    Platform = request.Platform
+                };
+
+
                 if (!accountService.AddAccount(account))
                 {
                     return Conflict(new { message = $"Account '{request.GameName}#{request.TagLine}' is already being tracked" });
@@ -105,7 +121,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers
             }
         }
 
-        // DELETE api/RiotAccounts/{puuid}
         [HttpDelete("{puuid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

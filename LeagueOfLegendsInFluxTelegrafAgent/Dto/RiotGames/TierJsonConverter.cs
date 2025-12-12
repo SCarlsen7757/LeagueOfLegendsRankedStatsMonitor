@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace InfluxDbDataInsert.Dto
+namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 {
-    public class TierRomanJsonConverter : JsonConverter<LeagueTier>
+    public class TierJsonConverter : JsonConverter<LeagueTier>
     {
         public override LeagueTier Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

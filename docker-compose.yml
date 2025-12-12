@@ -6,14 +6,30 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - influxdb
+      - mysql
     environment:
       - InfluxDb__Url=http://influxdb:8086/
       - InfluxDb__Organization=${INFLUXDB_ORGANIZATION}
       - InfluxDb__Bucket=${INFLUXDB_BUCKET}
       - InfluxDb__Token=${INFLUXDB_TOKEN}
+      - MySQL__ConnectionString=Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-LolStats};User=${MYSQL_USERNAME};Password=${MYSQL_PASSWORD};
+      - MongoDB__ConnectionString=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017
+      - MongoDB__DatabaseName=${MONGODB_DATABASE:-LolStats}
+      - MongoDB__CollectionName=${MONGODB_COLLECTION:-PlayerInformation}
       - RiotGamesApi__Token=${RIOT_API_TOKEN}
       - RiotGamesAccount__RefreshInterval=${RIOT_ACCOUNT_REFRESH_INTERVAL:-24:00:00}
       - RiotGamesLeagueEntry__RefreshInterval=${RIOT_LEAGUE_ENTRY_REFRESH_INTERVAL:-00:30:00}
+  mysql:
+    image: mysql:latest
+    ports:
+      - '8088:3306'
+    volumes:
+      - mysql-storage:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-LolStats}
+      - MYSQL_USER=${MYSQL_USERNAME}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
   influxdb:
     image: influxdb:latest
     ports:
@@ -38,5 +54,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
 
 volumes:
+  mysql-storage:
   influxdb-storage:
   grafana-storage:
