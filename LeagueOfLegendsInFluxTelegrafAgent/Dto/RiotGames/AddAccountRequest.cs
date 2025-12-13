@@ -13,5 +13,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 
         [Required]
         public required Platforms Platform { get; init; }
+
+        public string? Team { get; init; }
     }
 }

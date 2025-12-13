@@ -71,7 +71,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
                     GameName = account.GameName,
                     TagLine = account.TagLine,
                     PuuId = account.PuuId,
-                    Platform = request.Platform
+                    Platform = request.Platform,
+                    Team = request.Team ?? string.Empty
                 };
 
                 if (!accountService.AddAccount(account))
