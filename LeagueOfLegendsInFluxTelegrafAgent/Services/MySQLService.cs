@@ -27,6 +27,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                 entity.Property(e => e.GameName).HasMaxLength(255).IsRequired();
                 entity.Property(e => e.TagLine).HasMaxLength(255).IsRequired();
                 entity.Property(e => e.Platform).IsRequired();
+                entity.Property(e => e.Team).HasMaxLength(64).IsRequired(false);
                 entity.HasIndex(e => e.PuuId).IsUnique();
             });
         }
@@ -38,6 +39,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
         public required string GameName { get; set; }
         public required string TagLine { get; set; }
         public Platforms Platform { get; set; }
+        public string Team { get; set; } = string.Empty;
 
         public AccountDto ToDto()
         {
@@ -46,7 +48,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                 PuuId = PuuId,
                 GameName = GameName,
                 TagLine = TagLine,
-                Platform = Platform
+                Platform = Platform,
+                Team = Team,
             };
         }
 
@@ -57,7 +60,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                 PuuId = dto.PuuId,
                 GameName = dto.GameName,
                 TagLine = dto.TagLine,
-                Platform = dto.Platform
+                Platform = dto.Platform,
+                Team = dto.Team,
             };
         }
     }

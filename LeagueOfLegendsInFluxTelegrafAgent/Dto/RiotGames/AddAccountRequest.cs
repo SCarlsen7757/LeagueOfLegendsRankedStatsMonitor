@@ -14,6 +14,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
         [Required]
         public required Platforms Platform { get; init; }
 
-        public string? Team { get; init; }
+        [StringLength(64, ErrorMessage = "Team cannot be longer than 64 characters")]
+        public string Team { get; init => field = string.IsNullOrWhiteSpace(value) ? string.Empty : value; } = string.Empty;
     }
 }
