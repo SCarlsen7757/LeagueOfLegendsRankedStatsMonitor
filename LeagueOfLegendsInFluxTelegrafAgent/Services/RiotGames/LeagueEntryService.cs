@@ -12,10 +12,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
         private readonly IApiService apiService;
         private readonly IAccountService accountService;
 
-        private static readonly HashSet<LeagueEntryDTO> leagueEntryDTOs = [];
-
-        public event Action<IList<LeagueEntryDTO>>? OnNewLeagueEntryData;
-        public Dictionary<string, LeagueEntryDTO> LeagueEntries { get; private set; } = [];
+        public event Action<string, LeagueEntryDTO>? OnNewLeagueEntryData;
 
         public LeagueEntryService(IOptions<LeagueEntryServiceOptions> options,
                                   ILogger<LeagueEntryService> logger,
@@ -46,37 +43,27 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
 
             foreach (var keyPair in accountsSnapshot)
             {
-                var accountData = await FetchLeagueEntryDataAsync(keyPair.Key, keyPair.Value.Platform);
-                if (accountData == null)
+                var leagueData = await FetchLeagueEntryDataAsync(keyPair.Key, keyPair.Value.Platform);
+                if (leagueData == null)
                 {
                     if (logger.IsEnabled(LogLevel.Warning))
                         logger.LogWarning("No league entry data found for PUUID: {Puuid}", keyPair.Key);
                     continue;
                 }
 
-                if (!LeagueEntries.TryAdd(keyPair.Key, accountData))
+                var player = $"{keyPair.Value.GameName}#{keyPair.Value.TagLine}";
+
+                foreach (var entry in leagueData)
                 {
-                    LeagueEntries[keyPair.Key] = accountData;
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("Updated account data for PUUID: {Puuid}", keyPair.Key);
-                }
-                else
-                {
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("Added new account data for PUUID: {Puuid}", keyPair.Key);
+                    OnNewLeagueEntryData?.Invoke(player, entry);
                 }
             }
-
-            OnNewLeagueEntryData?.Invoke([.. LeagueEntries.Values]);
         }
 
-        public async Task<LeagueEntryDTO?> FetchLeagueEntryDataAsync(string puuid, Platforms platforms)
+        public async Task<IList<LeagueEntryDTO>?> FetchLeagueEntryDataAsync(string puuid, Platforms platforms)
         {
             string url = $"{apiService.GetUrl(platforms)}/lol/league/v4/entries/by-puuid/{puuid}";
-            var result = await apiService.GetAsync<List<LeagueEntryDTO>>(url);
-            if (result == null || result.Count == 0)
-                return null;
-            return result.FirstOrDefault(x => x.QueueType == "RANKED_SOLO_5x5");
+            return await apiService.GetAsync<List<LeagueEntryDTO>>(url);
         }
     }
 }

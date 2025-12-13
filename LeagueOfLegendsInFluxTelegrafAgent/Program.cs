@@ -55,29 +55,25 @@ var influxDbConfig = builder.Configuration.GetSection("InfluxDb");
 var bucket = influxDbConfig["Bucket"] ?? "RankedStats";
 var organization = influxDbConfig["Organization"] ?? "LeagueOfLegends";
 
-// Subscribe to league entry data changes and write to InfluxDB
-leagueEntryService.OnNewLeagueEntryData += async (leagueEntries) =>
+// Subscribe to league entry data and write to InfluxDB
+leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
 {
-    foreach (var entry in leagueEntries)
-    {
-        var account = accountService.Accounts.ToList().FirstOrDefault(x => x.Key == entry.PuuId);
+    var point = PointData
+        .Measurement("PlayerStats")
+        .Tag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
+        .Tag("Player", player)
+        .Field(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
+        .Field(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
+        .Field(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
+        .Field(nameof(LeagueEntryDTO.Losses), leagueEntries.Losses)
+        .Field(nameof(LeagueEntryDTO.TotalGames), leagueEntries.TotalGames)
+        .Field(nameof(LeagueEntryDTO.WinRate), leagueEntries.WinRate)
+        .Field(nameof(LeagueEntryDTO.HotStreak), leagueEntries.HotStreak)
+        .Field(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
+        .Field(nameof(LeagueEntryDTO.Rank), leagueEntries.Rank)
+        .Timestamp(DateTime.UtcNow, InfluxDB.Client.Api.Domain.WritePrecision.Ns);
 
-        var point = PointData
-            .Measurement("PlayerStats")
-            .Tag(nameof(LeagueEntryDTO.PuuId), entry.PuuId)
-            .Tag("Player", $"{account.Value.GameName}#{account.Value.TagLine}")
-            .Field(nameof(LeagueEntryDTO.LeaguePoints), entry.TotalLeaguePoints)
-            .Field(nameof(LeagueEntryDTO.Wins), entry.Wins)
-            .Field(nameof(LeagueEntryDTO.Losses), entry.Losses)
-            .Field(nameof(LeagueEntryDTO.TotalGames), entry.TotalGames)
-            .Field(nameof(LeagueEntryDTO.WinRate), entry.WinRate)
-            .Field(nameof(LeagueEntryDTO.HotStreak), entry.HotStreak)
-            .Field(nameof(LeagueEntryDTO.Tier), entry.Tier.ToString())
-            .Field(nameof(LeagueEntryDTO.Rank), entry.Rank)
-            .Timestamp(DateTime.UtcNow, InfluxDB.Client.Api.Domain.WritePrecision.Ns);
-
-        await influxDbService.WriteDataPointAsync(point, bucket, organization);
-    }
+    await influxDbService.WriteDataPointAsync(point, bucket, organization);
 };
 
 app.UseSwagger();

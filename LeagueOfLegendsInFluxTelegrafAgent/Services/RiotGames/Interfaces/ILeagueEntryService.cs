@@ -5,9 +5,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces
 {
     public interface ILeagueEntryService
     {
-        Dictionary<string, LeagueEntryDTO> LeagueEntries { get; }
-        event Action<IList<LeagueEntryDTO>>? OnNewLeagueEntryData;
+        event Action<string, LeagueEntryDTO>? OnNewLeagueEntryData;
         Task FetchAllLeagueEntryDataAsync();
-        Task<LeagueEntryDTO?> FetchLeagueEntryDataAsync(string puuid, Platforms platforms);
+        Task<IList<LeagueEntryDTO>?> FetchLeagueEntryDataAsync(string puuid, Platforms platforms);
     }
 }
