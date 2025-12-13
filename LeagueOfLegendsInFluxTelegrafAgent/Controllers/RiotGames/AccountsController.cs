@@ -10,17 +10,14 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
     {
         private readonly ILogger<AccountsController> logger;
         private readonly IAccountService accountService;
-        private readonly ILeagueEntryService leagueEntryService;
 
         public AccountsController(
             ILogger<AccountsController> logger,
-            IAccountService accountService,
-            ILeagueEntryService leagueEntryService
+            IAccountService accountService
             )
         {
             this.logger = logger;
             this.accountService = accountService;
-            this.leagueEntryService = leagueEntryService;
         }
 
         [HttpGet]
