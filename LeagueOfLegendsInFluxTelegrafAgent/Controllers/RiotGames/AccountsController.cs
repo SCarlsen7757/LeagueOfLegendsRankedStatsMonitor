@@ -48,6 +48,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<ActionResult<AccountDto>> Post([FromBody] AddAccountRequest request)
         {
             if (!ModelState.IsValid)
@@ -67,15 +69,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
                     return NotFound(new { message = $"Riot account '{request.GameName}#{request.TagLine}' not found" });
                 }
 
-                var leagueEntry = await leagueEntryService.FetchLeagueEntryDataAsync(account.PuuId, request.Platform);
-                if (leagueEntry == null)
-                {
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("No league entry data found for account: {GameName}#{TagLine} (PUUID: {PuuId})",
-                            account.GameName, account.TagLine, account.PuuId);
-                    return NotFound(new { message = $"No league entry data found for account '{request.GameName}#{request.TagLine}'. At platform: {request.Platform}" });
-                }
-
                 account = new AccountDto()
                 {
                     GameName = account.GameName,
@@ -83,7 +76,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
                     PuuId = account.PuuId,
                     Platform = request.Platform
                 };
-
 
                 if (!accountService.AddAccount(account))
                 {
