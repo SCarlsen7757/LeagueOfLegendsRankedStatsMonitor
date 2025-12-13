@@ -51,8 +51,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
                     continue;
                 }
 
-                var player = $"{keyPair.Value.GameName}#{keyPair.Value.TagLine}";
-
+                var player = keyPair.Value.PlayerName;
                 foreach (var entry in leagueData)
                 {
                     OnNewLeagueEntryData?.Invoke(player, entry);
