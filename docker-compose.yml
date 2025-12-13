@@ -9,8 +9,8 @@ services:
       - mysql
     environment:
       - InfluxDb__Url=http://influxdb:8086/
-      - InfluxDb__Organization=${INFLUXDB_ORGANIZATION}
-      - InfluxDb__Bucket=${INFLUXDB_BUCKET}
+      - InfluxDb__Organization=${INFLUXDB_ORGANIZATION:-LeagueOfLegends}
+      - InfluxDb__Bucket=${INFLUXDB_BUCKET:-RankedStats}
       - InfluxDb__Token=${INFLUXDB_TOKEN}
       - MySQL__ConnectionString=Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-RiotGames};User=${MYSQL_USERNAME};Password=${MYSQL_PASSWORD};
       - RiotGamesApi__Token=${RIOT_API_TOKEN}
