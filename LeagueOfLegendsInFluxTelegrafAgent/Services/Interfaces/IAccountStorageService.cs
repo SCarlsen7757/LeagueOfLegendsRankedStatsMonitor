@@ -1,12 +1,12 @@
-using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto;
 
 namespace LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces
 {
     public interface IAccountStorageService
     {
-        Task<AccountDto?> GetAccountAsync(string puuId);
-        Task<List<AccountDto>> GetAllAccountsAsync();
-        Task<bool> UpsertAccountAsync(AccountDto account);
+        Task<IAccount?> GetAccountAsync(string puuId);
+        Task<IList<IAccount>> GetAllAccountsAsync();
+        Task<bool> UpsertAccountAsync(IAccount account);
         Task<bool> DeleteAccountAsync(string puuId);
     }
 }

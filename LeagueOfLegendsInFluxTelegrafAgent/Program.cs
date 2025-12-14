@@ -1,4 +1,4 @@
-using InfluxDB.Client.Writes;
+using InfluxDB3.Client.Write;
 using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
 using LeagueOfLegendsInFluxTelegrafAgent.Services;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces;
@@ -46,34 +46,36 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Set up event subscriptions for InfluxDB
+// Initialize InfluxDB (create org and bucket if needed)
 var influxDbService = app.Services.GetRequiredService<InfluxDBService>();
+await influxDbService.InitializeAsync();
+
+// Set up event subscriptions for InfluxDB
 var accountService = app.Services.GetRequiredService<AccountService>();
 var leagueEntryService = app.Services.GetRequiredService<LeagueEntryService>();
 
 var influxDbConfig = builder.Configuration.GetSection("InfluxDb");
-var bucket = influxDbConfig["Bucket"] ?? "RankedStats";
-var organization = influxDbConfig["Organization"] ?? "LeagueOfLegends";
+var database = influxDbConfig["Database"] ?? "RankedStats";
 
 // Subscribe to league entry data and write to InfluxDB
 leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
 {
     var point = PointData
         .Measurement("PlayerStats")
-        .Tag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
-        .Tag("Player", player)
-        .Field(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
-        .Field(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
-        .Field(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
-        .Field(nameof(LeagueEntryDTO.Losses), leagueEntries.Losses)
-        .Field(nameof(LeagueEntryDTO.TotalGames), leagueEntries.TotalGames)
-        .Field(nameof(LeagueEntryDTO.WinRate), leagueEntries.WinRate)
-        .Field(nameof(LeagueEntryDTO.HotStreak), leagueEntries.HotStreak)
-        .Field(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
-        .Field(nameof(LeagueEntryDTO.Rank), leagueEntries.Rank)
-        .Timestamp(DateTime.UtcNow, InfluxDB.Client.Api.Domain.WritePrecision.Ns);
+        .SetTag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
+        .SetTag("Player", player)
+        .SetField(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
+        .SetField(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
+        .SetField(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
+        .SetField(nameof(LeagueEntryDTO.Losses), leagueEntries.Losses)
+        .SetField(nameof(LeagueEntryDTO.TotalGames), leagueEntries.TotalGames)
+        .SetField(nameof(LeagueEntryDTO.WinRate), leagueEntries.WinRate)
+        .SetField(nameof(LeagueEntryDTO.HotStreak), leagueEntries.HotStreak)
+        .SetField(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
+        .SetField(nameof(LeagueEntryDTO.Rank), leagueEntries.Rank)
+        .SetTimestamp(DateTime.UtcNow);
 
-    await influxDbService.WriteDataPointAsync(point, bucket, organization);
+    await influxDbService.WriteDataPointAsync(point, database);
 };
 
 app.UseSwagger();

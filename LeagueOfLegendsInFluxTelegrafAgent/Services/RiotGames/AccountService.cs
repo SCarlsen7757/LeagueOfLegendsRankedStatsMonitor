@@ -1,4 +1,5 @@
-﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces;
 using Microsoft.Extensions.Options;
@@ -13,11 +14,11 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
         private readonly IApiService apiService;
         private readonly IAccountStorageService storageService;
 
-        public event Action<IReadOnlyDictionary<string, AccountDto>>? OnNewAccountData;
+        public event Action<IReadOnlyDictionary<string, IAccount>>? OnNewAccountData;
 
-        private readonly ConcurrentDictionary<string, AccountDto> accounts = new();
+        private readonly ConcurrentDictionary<string, IAccount> accounts = new();
 
-        public IReadOnlyDictionary<string, AccountDto> Accounts => accounts;
+        public IReadOnlyDictionary<string, IAccount> Accounts => accounts;
 
         public AccountService(IOptions<AccountServiceOptions> options,
                               ILogger<AccountService> logger,
@@ -52,13 +53,19 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
             }
         }
 
-        public async Task<AccountDto?> FetchAccountByRiotIdAsync(string gameName, string tagLine)
+        public async Task<AccountDto?> FetchAccountByNameAndTagAsync(string gameName, string tagLine)
         {
             string url = $"{apiService.GetUrl(apiService.Region)}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
             return await apiService.GetAsync<AccountDto>(url);
         }
 
-        public bool AddAccount(AccountDto account)
+        public async Task<AccountDto?> FetchAccountByPuuidAsync(string puuid)
+        {
+            string url = $"{apiService.GetUrl(apiService.Region)}/riot/account/v1/accounts/by-puuid/{puuid}";
+            return await apiService.GetAsync<AccountDto>(url);
+        }
+
+        public bool AddAccount(IAccount account)
         {
             if (Accounts.ContainsKey(account.PuuId))
             {
@@ -96,23 +103,19 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
             bool newDataFetched = false;
             foreach (var keyPair in accounts)
             {
-                var accountData = await FetchAccountDataAsync(keyPair.Key, keyPair.Value.TagLine);
+                var accountData = await FetchAccountByPuuidAsync(keyPair.Value.PuuId);
                 if (accountData != null)
                 {
                     if (accountData.GameName == keyPair.Value.GameName && accountData.TagLine == keyPair.Value.TagLine) continue;
 
-                    accounts[keyPair.Key] = new AccountDto
-                    {
-                        PuuId = accountData.PuuId,
-                        GameName = accountData.GameName,
-                        TagLine = accountData.TagLine,
-                    };
+                    accounts[keyPair.Key].GameName = accountData.GameName;
+                    accounts[keyPair.Key].TagLine = accountData.TagLine;
 
                     _ = storageService.UpsertAccountAsync(accounts[keyPair.Key]);
 
                     newDataFetched = true;
                     if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("Updated account data for PUUID: {Puuid}", keyPair.Key);
+                        logger.LogInformation("Updated account data for PUUID: {Puuid}", keyPair.Value.PuuId);
                 }
             }
 
@@ -123,10 +126,5 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
             return newDataFetched;
         }
 
-        private async Task<AccountDto?> FetchAccountDataAsync(string puuid, string tagLine)
-        {
-            string url = $"{apiService.GetUrl(apiService.Region)}/riot/account/v1/accounts/by-puuid/{puuid}";
-            return await apiService.GetAsync<AccountDto>(url);
-        }
     }
 }

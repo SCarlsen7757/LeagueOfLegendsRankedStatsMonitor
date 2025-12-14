@@ -8,10 +8,9 @@ services:
       - influxdb
       - mysql
     environment:
-      - InfluxDb__Url=http://influxdb:8086/
-      - InfluxDb__Organization=${INFLUXDB_ORGANIZATION:-LeagueOfLegends}
-      - InfluxDb__Bucket=${INFLUXDB_BUCKET:-RankedStats}
-      - InfluxDb__Token=${INFLUXDB_TOKEN}
+      - InfluxDb__Url=http://influxdb:8181/
+      - InfluxDb__Database=${INFLUXDB_DATABASE:-RankedStats}
+      - InfluxDb__Token=
       - MySQL__ConnectionString=Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-RiotGames};User=${MYSQL_USERNAME};Password=${MYSQL_PASSWORD};
       - RiotGamesApi__Token=${RIOT_API_TOKEN}
       - RiotGamesAccount__RefreshInterval=${RIOT_ACCOUNT_REFRESH_INTERVAL:-24:00:00}
@@ -28,15 +27,23 @@ services:
       - MYSQL_USER=${MYSQL_USERNAME}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
   influxdb:
-    image: influxdb:latest
+    image: influxdb:3-core
     ports:
-      - '8086:8086'
-    volumes:
-      - influxdb-storage:/var/lib/influxdb
+      - '8086:8181'
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
-      - INFLUXDB_DB=db0
-      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
-      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
+      - INFLUXDB3_BUCKET=${INFLUXDB_DATABASE:-RankedStats}
+      - INFLUXDB3_START_WITHOUT_AUTH=true
+    volumes:
+      - influxdb-data:/var/lib/influxdb3/data
+      - influxdb-plugins:/var/lib/influxdb3/plugins
+    user: "0:0"
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -52,5 +59,6 @@ services:
 
 volumes:
   mysql-storage:
-  influxdb-storage:
+  influxdb-data:
+  influxdb-plugins:
   grafana-storage:

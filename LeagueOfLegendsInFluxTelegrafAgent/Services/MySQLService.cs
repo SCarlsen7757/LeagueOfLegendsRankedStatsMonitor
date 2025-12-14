@@ -1,5 +1,4 @@
-using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
-using LeagueOfLegendsInFluxTelegrafAgent.Enums.RiotGames;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +11,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
 
     public class AccountDbContext : DbContext
     {
-        public DbSet<AccountEntity> Accounts { get; set; }
+        public DbSet<TrackedAccount> Accounts { get; set; }
 
         public AccountDbContext(DbContextOptions<AccountDbContext> options) : base(options)
         {
@@ -20,7 +19,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<AccountEntity>(entity =>
+            modelBuilder.Entity<TrackedAccount>(entity =>
             {
                 entity.HasKey(e => e.PuuId);
                 entity.Property(e => e.PuuId).HasMaxLength(78);
@@ -30,39 +29,6 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                 entity.Property(e => e.Team).HasMaxLength(64).IsRequired(false);
                 entity.HasIndex(e => e.PuuId).IsUnique();
             });
-        }
-    }
-
-    public class AccountEntity
-    {
-        public required string PuuId { get; set; }
-        public required string GameName { get; set; }
-        public required string TagLine { get; set; }
-        public Platforms Platform { get; set; }
-        public string Team { get; set; } = string.Empty;
-
-        public AccountDto ToDto()
-        {
-            return new AccountDto
-            {
-                PuuId = PuuId,
-                GameName = GameName,
-                TagLine = TagLine,
-                Platform = Platform,
-                Team = Team,
-            };
-        }
-
-        public static AccountEntity FromDto(AccountDto dto)
-        {
-            return new AccountEntity
-            {
-                PuuId = dto.PuuId,
-                GameName = dto.GameName,
-                TagLine = dto.TagLine,
-                Platform = dto.Platform,
-                Team = dto.Team,
-            };
         }
     }
 
@@ -81,13 +47,13 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
             dbContext.Database.EnsureCreated();
         }
 
-        public async Task<AccountDto?> GetAccountAsync(string puuId)
+        public async Task<IAccount?> GetAccountAsync(string puuId)
         {
             try
             {
                 using var dbContext = contextFactory.CreateDbContext();
                 var entity = await dbContext.Accounts.FindAsync(puuId);
-                return entity?.ToDto();
+                return entity;
             }
             catch (Exception ex)
             {
@@ -97,13 +63,13 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
             }
         }
 
-        public async Task<List<AccountDto>> GetAllAccountsAsync()
+        public async Task<IList<IAccount>> GetAllAccountsAsync()
         {
             try
             {
                 using var dbContext = contextFactory.CreateDbContext();
                 var entities = await dbContext.Accounts.ToListAsync();
-                return entities.Select(e => e.ToDto()).ToList();
+                return [.. entities.Cast<IAccount>()];
             }
             catch (Exception ex)
             {
@@ -113,7 +79,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
             }
         }
 
-        public async Task<bool> UpsertAccountAsync(AccountDto account)
+        public async Task<bool> UpsertAccountAsync(IAccount account)
         {
             try
             {
@@ -126,13 +92,12 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
                     existingEntity.GameName = account.GameName;
                     existingEntity.TagLine = account.TagLine;
                     existingEntity.Platform = account.Platform;
+                    existingEntity.Team = account.Team;
                     dbContext.Accounts.Update(existingEntity);
                 }
                 else
                 {
-                    // Insert new
-                    var newEntity = AccountEntity.FromDto(account);
-                    await dbContext.Accounts.AddAsync(newEntity);
+                    await dbContext.Accounts.AddAsync((TrackedAccount)account);
                 }
 
                 await dbContext.SaveChangesAsync();

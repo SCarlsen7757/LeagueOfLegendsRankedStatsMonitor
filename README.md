@@ -16,7 +16,7 @@ The application periodically fetches data from the Riot Games API, stores it in 
 ## Architecture
 
 - **Backend**: .NET 10 ASP.NET Core Web API
-- **Time-Series Database**: InfluxDB (for player statistics)
+- **Time-Series Database**: InfluxDB 3 (for player statistics)
 - **Relational Database**: MySQL (for account storage)
 - **Visualization**: Grafana
 - **Containerization**: Docker & Docker Compose
@@ -48,11 +48,8 @@ MYSQL_ROOT_PASSWORD=rootpassword123
 MYSQL_DATABASE=RiotGames
 
 # InfluxDB Configuration
-INFLUXDB_USERNAME=admin
-INFLUXDB_PASSWORD=admin
-INFLUXDB_ORGANIZATION=LeagueOfLegends
-INFLUXDB_BUCKET=RankedStats
-INFLUXDB_TOKEN=<your-influxdb-token>
+# Note: InfluxDB runs without authentication (START_WITHOUT_AUTH enabled)
+INFLUXDB_DATABASE=RankedStats
 
 # Grafana Configuration
 GRAFANA_USERNAME=admin
@@ -68,7 +65,7 @@ RIOT_LEAGUE_ENTRY_REFRESH_INTERVAL=00:10:00
 
 **Important**: 
 - Replace `<your-riot-api-key>` with your actual Riot Games API key from https://developer.riotgames.com/
-- Replace `<your-influxdb-token>` with your InfluxDB token (generated after first setup or use the default from `.env`)
+- **InfluxDB Authentication**: InfluxDB runs without authentication. The `INFLUXDB3_START_WITHOUT_AUTH=true` flag is set in `docker-compose.yml`. No token is required for local development.
 
 ### 3. Start the Application
 
@@ -96,8 +93,6 @@ All services should show as "Up" or "running".
 
 - **Swagger API Documentation**: http://localhost:5000/swagger
 - **InfluxDB UI**: http://localhost:8086
-  - Username: `admin` (from INFLUXDB_USERNAME)
-  - Password: `admin` (from INFLUXDB_PASSWORD)
 - **Grafana**: http://localhost:8087
   - Username: `admin` (from GRAFANA_USERNAME)
   - Password: `admin` (from GRAFANA_PASSWORD)
@@ -125,33 +120,45 @@ Enter the root password (default: `rootpassword123` from `.env`)
 ```sql
 CREATE USER 'grafana_user'@'%' IDENTIFIED BY 'grafana_password';
 GRANT SELECT ON RiotGames.* TO 'grafana_user'@'%';
-GRANT SELECT ON RiotGames.Accounts TO 'grafana_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
-3. Verify the user was created:
-
-```sql
-SELECT User, Host FROM mysql.user WHERE User = 'grafana_user';
-```
-
-4. Exit MySQL:
+3. Exit MySQL:
 
 ```sql
 EXIT;
 ```
 
-### Configure Grafana MySQL Data Source
+## InfluxDB Configuration in Grafana
+
+### Add InfluxDB as a Data Source
 
 1. Open Grafana at http://localhost:8087
-2. Navigate to **Configuration** > **Data Sources**
-3. Click **Add data source**
+2. Navigate to **Connections** > **Data sources** (or **Configuration** > **Data Sources** in older versions)
+3. Click **+ Add new data source**
+4. Select **InfluxDB** from the list
+5. Configure with the following settings:
+   - **Name**: `InfluxDB` (or your preferred name)
+   - **Query Language**: `InfluxQL`
+   - **URL**: `http://influxdb:8181`
+   - **Database**: `RankedStats`
+6. Click **Save & Test**
+
+You should see a green "datasource is working" message.
+
+## MySQL Configuration in Grafana
+
+### Add MySQL as a Data Source (optional)
+
+1. Open Grafana at http://localhost:8087
+2. Navigate to **Connections** > **Data sources**
+3. Click **+ Add new data source**
 4. Select **MySQL**
 5. Configure with the following settings:
    - **Host**: `mysql:3306`
    - **Database**: `RiotGames`
-   - **User**: `grafana_user`
-   - **Password**: `grafana_password`
+   - **User**: `grafana_user` (or `root` for quick testing)
+   - **Password**: `grafana_password` (or the root password)
 6. Click **Save & Test**
 
 ## Usage
@@ -178,7 +185,7 @@ curl -X POST "http://localhost:5000/api/accounts" \
   -d '{
     "gameName": "PlayerName",
     "tagLine": "EUW",
-    "region": "Europe"
+    "region": "2"
   }'
 ```
 
@@ -210,10 +217,9 @@ For local development without Docker, configure `LeagueOfLegendsInFluxTelegrafAg
     "ConnectionString": "Server=localhost;Port=3306;Database=RiotGames;User=root;Password=yourpassword;"
   },
   "InfluxDb": {
-    "Url": "http://localhost:8086/",
-    "Organization": "LeagueOfLegends",
-    "Bucket": "RankedStats",
-    "Token": "YourInfluxDbTokenHere"
+    "Url": "http://localhost:8181/",
+    "Database": "RankedStats",
+    "Token": ""
   },
   "RiotGamesApi": {
     "Token": "YourRiotApiTokenHere",

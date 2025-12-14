@@ -1,4 +1,5 @@
-﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +23,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<AccountDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<AccountDto>> GetAll()
+        public ActionResult<IEnumerable<IAccount>> GetAll()
         {
             return Ok(accountService.Accounts.Values.ToList());
         }
@@ -56,9 +57,9 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
 
             try
             {
-                var account = await accountService.FetchAccountByRiotIdAsync(request.GameName, request.TagLine);
+                var apiAccount = await accountService.FetchAccountByNameAndTagAsync(request.GameName, request.TagLine);
 
-                if (account == null)
+                if (apiAccount == null)
                 {
                     if (logger.IsEnabled(LogLevel.Warning))
                         logger.LogWarning("Account not found: {GameName}#{TagLine}", request.GameName, request.TagLine);
@@ -66,25 +67,18 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Controllers.RiotGames
                     return NotFound(new { message = $"Riot account '{request.GameName}#{request.TagLine}' not found" });
                 }
 
-                account = new AccountDto()
-                {
-                    GameName = account.GameName,
-                    TagLine = account.TagLine,
-                    PuuId = account.PuuId,
-                    Platform = request.Platform,
-                    Team = request.Team ?? string.Empty
-                };
+                var tracked = new TrackedAccount(apiAccount, request.Platform, request.Team ?? string.Empty);
 
-                if (!accountService.AddAccount(account))
+                if (!accountService.AddAccount(tracked))
                 {
                     return Conflict(new { message = $"Account '{request.GameName}#{request.TagLine}' is already being tracked" });
                 }
 
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("Successfully added account: {GameName}#{TagLine} (PUUID: {PuuId})",
-                        account.GameName, account.TagLine, account.PuuId);
+                        tracked.GameName, tracked.TagLine, tracked.PuuId);
 
-                return CreatedAtAction(nameof(Get), new { puuid = account.PuuId }, account);
+                return CreatedAtAction(nameof(Get), new { puuid = tracked.PuuId }, tracked);
             }
             catch (HttpRequestException ex)
             {
