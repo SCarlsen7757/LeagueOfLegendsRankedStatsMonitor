@@ -1,5 +1,5 @@
 using InfluxDB3.Client.Write;
-using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto;
 using LeagueOfLegendsInFluxTelegrafAgent.Services;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.Interfaces;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames;
@@ -58,21 +58,22 @@ var influxDbConfig = builder.Configuration.GetSection("InfluxDb");
 var database = influxDbConfig["Database"] ?? "RankedStats";
 
 // Subscribe to league entry data and write to InfluxDB
-leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
+leagueEntryService.OnNewLeagueEntryData += async (stats) =>
 {
     var point = PointData
         .Measurement("PlayerStats")
-        .SetTag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
-        .SetTag("Player", player)
-        .SetTag(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
-        .SetField(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
-        .SetField(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
-        .SetField(nameof(LeagueEntryDTO.Losses), leagueEntries.Losses)
-        .SetField(nameof(LeagueEntryDTO.TotalGames), leagueEntries.TotalGames)
-        .SetField(nameof(LeagueEntryDTO.WinRate), leagueEntries.WinRate)
-        .SetField(nameof(LeagueEntryDTO.HotStreak), leagueEntries.HotStreak)
-        .SetTag(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
-        .SetField(nameof(LeagueEntryDTO.Rank), leagueEntries.Rank)
+        .SetTag(nameof(IRankedStats.PuuId), stats.PuuId)
+        .SetTag(nameof(IRankedStats.Player), stats.Player)
+        .SetTag(nameof(IRankedStats.QueueType), stats.QueueType)
+        .SetField(nameof(IRankedStats.LeaguePoints), stats.LeaguePoints)
+        .SetField(nameof(IRankedStats.Wins), stats.Wins)
+        .SetField(nameof(IRankedStats.Losses), stats.Losses)
+        .SetField(nameof(IRankedStats.TotalGames), stats.TotalGames)
+        .SetField(nameof(IRankedStats.WinRate), stats.WinRate)
+        .SetField(nameof(IRankedStats.HotStreak), stats.HotStreak)
+        .SetTag(nameof(IRankedStats.Tier), stats.Tier.ToString())
+        .SetField(nameof(IRankedStats.Rank), stats.Rank)
+        .SetField(nameof(IRankedStats.Team), stats.Team)
         .SetTimestamp(DateTime.UtcNow);
 
     await influxDbService.WriteDataPointAsync(point, database);

@@ -18,7 +18,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Dto
         public string PuuId { get; set; } = string.Empty;
         public string GameName { get; set; } = string.Empty;
         public string TagLine { get; set; } = string.Empty;
-        public string PlayerName => $"{GameName}#{TagLine}";
+        public string Player => $"{GameName}#{TagLine}";
         public Platforms Platform { get; set; }
         public string Team { get; set; } = string.Empty;
     }

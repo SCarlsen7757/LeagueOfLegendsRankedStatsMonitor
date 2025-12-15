@@ -1,4 +1,5 @@
-﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
+﻿using LeagueOfLegendsInFluxTelegrafAgent.Dto;
+using LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames;
 using LeagueOfLegendsInFluxTelegrafAgent.Enums.RiotGames;
 using LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames.Interfaces;
 using Microsoft.Extensions.Options;
@@ -12,7 +13,7 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
         private readonly IApiService apiService;
         private readonly IAccountService accountService;
 
-        public event Action<string, LeagueEntryDTO>? OnNewLeagueEntryData;
+        public event Action<IRankedStats>? OnNewLeagueEntryData;
 
         public LeagueEntryService(IOptions<LeagueEntryServiceOptions> options,
                                   ILogger<LeagueEntryService> logger,
@@ -51,10 +52,10 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services.RiotGames
                     continue;
                 }
 
-                var player = keyPair.Value.PlayerName;
+                var player = keyPair.Value;
                 foreach (var entry in leagueData)
                 {
-                    OnNewLeagueEntryData?.Invoke(player, entry);
+                    OnNewLeagueEntryData?.Invoke(new RankedStats(player, entry));
                 }
             }
         }

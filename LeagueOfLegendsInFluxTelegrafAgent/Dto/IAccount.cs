@@ -4,11 +4,11 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Dto
 {
     public interface IAccount
     {
-        string PuuId { get; set; }
+        string PuuId { get; }
         string GameName { get; set; }
         string TagLine { get; set; }
-        string PlayerName { get; }
-        Platforms Platform { get; set; }
+        string Player { get; }
+        Platforms Platform { get; }
         string Team { get; set; }
     }
 }
