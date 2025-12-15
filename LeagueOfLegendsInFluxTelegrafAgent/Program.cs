@@ -63,7 +63,7 @@ leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
     var point = PointData
         .Measurement("PlayerStats")
         .SetTag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
-        .SetField("Player", player)
+        .SetTag("Player", player)
         .SetTag(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
         .SetField(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
         .SetField(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
@@ -71,7 +71,7 @@ leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
         .SetField(nameof(LeagueEntryDTO.TotalGames), leagueEntries.TotalGames)
         .SetField(nameof(LeagueEntryDTO.WinRate), leagueEntries.WinRate)
         .SetField(nameof(LeagueEntryDTO.HotStreak), leagueEntries.HotStreak)
-        .SetField(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
+        .SetTag(nameof(LeagueEntryDTO.Tier), leagueEntries.Tier.ToString())
         .SetField(nameof(LeagueEntryDTO.Rank), leagueEntries.Rank)
         .SetTimestamp(DateTime.UtcNow);
 
