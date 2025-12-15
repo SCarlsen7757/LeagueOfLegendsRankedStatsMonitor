@@ -63,7 +63,7 @@ leagueEntryService.OnNewLeagueEntryData += async (player, leagueEntries) =>
     var point = PointData
         .Measurement("PlayerStats")
         .SetTag(nameof(LeagueEntryDTO.PuuId), leagueEntries.PuuId)
-        .SetTag("Player", player)
+        .SetField("Player", player)
         .SetTag(nameof(LeagueEntryDTO.QueueType), leagueEntries.QueueType)
         .SetField(nameof(LeagueEntryDTO.LeaguePoints), leagueEntries.TotalLeaguePoints)
         .SetField(nameof(LeagueEntryDTO.Wins), leagueEntries.Wins)
