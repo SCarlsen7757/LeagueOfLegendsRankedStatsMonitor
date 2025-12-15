@@ -10,7 +10,7 @@ services:
     environment:
       - InfluxDb__Url=http://influxdb:8181/
       - InfluxDb__Database=${INFLUXDB_DATABASE:-RankedStats}
-      - InfluxDb__Token=
+      - InfluxDb__Token=${INFLUXDB_TOKEN}
       - MySQL__ConnectionString=Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-RiotGames};User=${MYSQL_USERNAME};Password=${MYSQL_PASSWORD};
       - RiotGamesApi__Token=${RIOT_API_TOKEN}
       - RiotGamesAccount__RefreshInterval=${RIOT_ACCOUNT_REFRESH_INTERVAL:-24:00:00}
@@ -39,11 +39,20 @@ services:
       - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
       - INFLUXDB3_BUCKET=${INFLUXDB_DATABASE:-RankedStats}
-      - INFLUXDB3_START_WITHOUT_AUTH=true
     volumes:
       - influxdb-data:/var/lib/influxdb3/data
       - influxdb-plugins:/var/lib/influxdb3/plugins
     user: "0:0"
+  explorer:
+    image: influxdata/influxdb3-ui:1.4.0
+    ports:
+      - "8089:80"
+    command: ["--mode=admin"]
+    environment:
+      - DEFAULT_INFLUX_NAME=LeagueOfLegendesRandkedStats
+      - DEFAULT_INFLUX_SERVER=http://influxdb:8181
+      - DEFAULT_INFLUX_DATABASE=${INFLUXDB_DATABASE:-RankedStats}
+      - DEFAULT_API_TOKEN=${INFLUXDB_TOKEN} 
   grafana:
     image: grafana/grafana:latest
     ports:

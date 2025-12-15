@@ -48,8 +48,8 @@ MYSQL_ROOT_PASSWORD=rootpassword123
 MYSQL_DATABASE=RiotGames
 
 # InfluxDB Configuration
-# Note: InfluxDB runs without authentication (START_WITHOUT_AUTH enabled)
 INFLUXDB_DATABASE=RankedStats
+INFLUXDB_TOKEN=<your-influxdb-token>
 
 # Grafana Configuration
 GRAFANA_USERNAME=admin
@@ -65,9 +65,19 @@ RIOT_LEAGUE_ENTRY_REFRESH_INTERVAL=00:10:00
 
 **Important**: 
 - Replace `<your-riot-api-key>` with your actual Riot Games API key from https://developer.riotgames.com/
-- **InfluxDB Authentication**: InfluxDB runs without authentication. The `INFLUXDB3_START_WITHOUT_AUTH=true` flag is set in `docker-compose.yml`. No token is required for local development.
+- Replace `<your-influxdb-token>` with an admin or appropriately scoped token created for your local InfluxDB instance (see below).
 
-### 3. Start the Application
+### 3. Generate InfluxDB Token
+
+When running via Docker Compose, you can generate an InfluxDB token using:
+
+```bash
+docker-compose exec influxdb influxdb3 create token --admin
+```
+
+Copy the generated token value and set it as `INFLUXDB_TOKEN` in your `.env` file.
+
+### 4. Start the Application
 
 Using Docker Compose (recommended):
 
@@ -81,7 +91,7 @@ This will start all services:
 - **InfluxDB**: Available at http://localhost:8086
 - **Grafana**: Available at http://localhost:8087
 
-### 4. Verify Services are Running
+### 5. Verify Services are Running
 
 ```bash
 docker-compose ps
@@ -89,9 +99,9 @@ docker-compose ps
 
 All services should show as "Up" or "running".
 
-### 5. Access the Application
+### 6. Access the Application
 
-- **Swagger API Documentation**: http://localhost:5000/swagger
+- **Swagger API Documentation**: http://localhost:5000/swagger/index.html
 - **InfluxDB UI**: http://localhost:8086
 - **Grafana**: http://localhost:8087
   - Username: `admin` (from GRAFANA_USERNAME)
@@ -142,7 +152,10 @@ EXIT;
    - **Query Language**: `InfluxQL`
    - **URL**: `http://influxdb:8181`
    - **Database**: `RankedStats`
-6. Click **Save & Test**
+6. In the **Auth** section, enable **Custom HTTP Headers** and add:
+   - **Header**: `Authorization`
+   - **Value**: `Token <your-influxdb-token>`
+7. Click **Save & Test**
 
 You should see a green "datasource is working" message.
 
@@ -173,7 +186,7 @@ Use the API to add League of Legends accounts to track:
 {
   "gameName": "PlayerName",
   "tagLine": "1234", // e.g., "EUW", "NA", etc.
-  "region": "EUW1"
+  "region": "2" // See the RiotGames.Platforms enum for values
 }
 ```
 
@@ -188,13 +201,6 @@ curl -X POST "http://localhost:5000/api/accounts" \
     "region": "2"
   }'
 ```
-
-### Available Regions
-
-- `Americas`
-- `Asia`
-- `Europe`
-- `Sea`
 
 ### Data Refresh Intervals
 
@@ -219,7 +225,7 @@ For local development without Docker, configure `LeagueOfLegendsInFluxTelegrafAg
   "InfluxDb": {
     "Url": "http://localhost:8181/",
     "Database": "RankedStats",
-    "Token": ""
+    "Token": "YourInfluxDbTokenHere"
   },
   "RiotGamesApi": {
     "Token": "YourRiotApiTokenHere",

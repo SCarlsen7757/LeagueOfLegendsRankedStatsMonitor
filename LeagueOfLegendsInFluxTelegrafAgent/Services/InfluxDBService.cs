@@ -17,7 +17,8 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
         private readonly ILogger<InfluxDBService> logger;
         private bool isInitialized = false;
         private readonly SemaphoreSlim initLock = new(1, 1);
-        private InfluxDBClient Client { get; set; }
+        private InfluxDBClient? Client { get; set; }
+        public string Database => options.Database;
 
         public InfluxDBService(IOptions<InfluxDBServiceOptions> options,
                                ILogger<InfluxDBService> logger)
@@ -82,8 +83,22 @@ namespace LeagueOfLegendsInFluxTelegrafAgent.Services
         {
             await InitializeAsync();
 
+            if (Client is null)
+            {
+                if (logger.IsEnabled(LogLevel.Error))
+                    logger.LogError("InfluxDB Client is not initialized.");
+                return;
+            }
 
-            await Client.WritePointAsync(data, database);
+            try
+            {
+                await Client.WritePointAsync(data, database);
+            }
+            catch (Exception ex)
+            {
+                if (logger.IsEnabled(LogLevel.Critical))
+                    logger.LogCritical(ex, "Failed to write PointData to InfluxDB database:{database}", database);
+            }
 
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("Wrote data point to InfluxDB: {Data}", data.ToLineProtocol());
