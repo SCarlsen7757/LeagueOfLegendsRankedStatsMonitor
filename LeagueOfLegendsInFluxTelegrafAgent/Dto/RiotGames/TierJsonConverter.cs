@@ -1,3 +1,4 @@
+using LeagueOfLegendsInFluxTelegrafAgent.Enums.RiotGames;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

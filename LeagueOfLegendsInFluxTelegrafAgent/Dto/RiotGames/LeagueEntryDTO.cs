@@ -1,5 +1,6 @@
 ﻿namespace LeagueOfLegendsInFluxTelegrafAgent.Dto.RiotGames
 {
+    using LeagueOfLegendsInFluxTelegrafAgent.Enums.RiotGames;
     using System.Text.Json.Serialization;
 
     public record LeagueEntryDTO
